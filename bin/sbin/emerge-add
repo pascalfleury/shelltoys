@@ -1,0 +1,30 @@
+#!/bin/bash
+. $(dirname $0)/emerge.shlib
+
+# Script to add a package to be scheduled for integration
+# at the next iteration of emerge-cronjob.sh
+
+[ singleton_script ] || error "Process with pid $? already running. Aborting."
+
+emerge_import PKGDIR PORTDIR DISTDIR
+ADDS=$PKGDIR/update-new.db
+
+[ $? == 0 ] || error "Package cannot be integrated as is."
+
+check_packs=""
+for package in $* ; do
+    cache_has $ADDS $package
+    if [ $? == 0 ]; then
+	info "Scheduling package $package."
+	cache_add $ADDS $package
+	check_packs="$check_packs $package"
+    else
+	info "Package $package already scheduled."
+    fi
+done
+
+if [ -n "$check_packs" ]; then
+    info "Verifying integration..."
+    emerge -uDp --newuse $check_packs
+fi
+

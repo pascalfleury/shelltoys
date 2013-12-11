@@ -1,0 +1,173 @@
+#!/bin/sh
+#  ##############################################################
+#  
+#  Packager - Produce self-installable scripts for Linux/Unix
+#             (c) 2004 by Pascal Fleury, Switzerland
+#  
+#  This script  wraps a directory  into a single  executable
+#  script, which will self-extract  and run a install script
+#  which can be set.
+#  Note: It will not create a full install, just the wrapper
+#     around a directory which itself contains an installer.
+#  
+#  Options:
+#    --help     : gives this message
+#    --script   : produces a sample script
+#  
+#  This software is published under the GPL. Feel free to use, 
+#  copy, distribute, modify this tool. If you improve it, I
+#  would also appreciate that you show me what you did.
+#  
+#  ##############################################################
+
+
+# ####################### CONFIG DATA ###########################
+SRCDIR=.
+VERBOSE=1
+OVERWRITE=1
+
+PRODUCT=SitCom
+VERSION=1.0.3
+INSTALLER=configure
+INSTALLER_OPTIONS=
+
+BASE64=
+COMPRESS=gzip
+UNCOMPRESS=gunzip
+# ##################### END OF CONFIG DATA ######################
+STARTRED= #'\[\033[01;31m\]'
+STOPRED= #'\[\033[00m\]'
+STARTYELLOW= #'\[\033[01;32m\]'
+STOPYELLOW= #'\[\033[00m\]'
+STARTBLUE= #'\[\033[01;34m\]'
+STOPBLUE= #'\[\033[00m\]'
+info() {
+	if test "$VERBOSE" == "1"; then
+		echo "${STARTBLUE}[info] $*${STOPBLUE}"
+   fi
+}
+warn() {
+	echo "${STARTYELLOW}[Warning] $*${STOPYELLOW}"
+}
+error() {
+	echo "${STARTRED}[ERROR] $*${STOPRED}"
+	exit 1
+}
+SDE_NAME=`cat $0 | head | egrep '[a-zA-Z]* - ' | sed 's/^# *//' | sed 's/ *\-.*$//'`
+SDE_VERSION=`echo '$Rev: 1.0 $' | sed 's/.*Rev* *: *//' | sed 's/\$.*$//'`
+SDE_COPYRIGHT=`cat $0 | head | grep '(c)' | sed 's/^.*(c)/(c)/' | sed 's/ *\$//'`
+TMPDIR=/tmp/setup\$\$
+
+# ################# READING THE SCRIPT FILE #####################
+SCRIPTFILE=$1
+if test "$SCRIPTFILE" == "--help" -o "$SCRIPTFILE" == ""; then
+	NBLINES=`cat $0 | grep '# ' | wc -l `
+	cat $0 | head -n $NBLINES | grep '#  ' | sed 's/^# //'
+  exit 0 
+EOH
+fi
+if test "$SCRIPTFILE" == "--script"; then
+	cat << EOSCRIPT;
+# Sample script file for $SDE_NAME $SDE_VERSION
+# $SDE_NAME is $SDE_COPYRIGHT
+# This is a shell include, so do not pput spaces around '=' !
+
+# >>> Script execution flags
+VERBOSE=1          # use 0 to make $SDE_NAME silent
+OVERWRITE=0        # use 1 to overwrite result file no questions asked
+
+# >>> Product to package
+SRCDIR=<directory where you source resides>
+PRODUCT=<your product name>
+VERSION=<product version>
+INSTALLER=<in the directory, the script to run to install>
+INSTALLER_OPTIONS= # Options to give to the script by default
+
+# >>> These are optional
+
+# >>> Default is uuencode, but you may switch to base-64
+#BASE64=           # Set this to 1 if you need base-64 encoding 
+
+# >>> Note that the decompression must match the compression scheme
+#COMPRESS=gzip     # Set this to compress, gzip or bzip2
+#UNCOMPRESS=gunzip # Set this to uncompress, gunzip or bunzip2
+
+EOSCRIPT
+	exit 0
+fi
+
+info "$SDE_NAME $SDE_VERSION $SDE_COPYRIGHT"
+if test ! -f "$SCRIPTFILE" ; then
+	error "Did not find script file '$SCRIPTFILE'"
+fi
+. "$SCRIPTFILE"
+
+BUILDDIR=/tmp/packager$$
+mkdir $BUILDDIR
+BASEDIR=`echo $SRCDIR | sed 's/.*\///' `
+
+# ##### Pack the data
+info "Packing $BASEDIR ..."
+( cd $SRCDIR/.. && tar cf - $BASEDIR ) > $BUILDDIR/data.tar
+
+# ##### Customize the expander
+info "Creating expander ..."
+cat > $BUILDDIR/expander.sh << EOEXP;
+#!/bin/sh
+# Auto-expander produced with $SDE_NAME V$SDE_VERSION
+# $SDE_COPYRIGHT
+if test "\$1" == "--help" ; then
+	 echo "This is the self-extracting installer for $PRODUCT $VERSION"
+	 echo "The installer says:"
+	 $BASEDIR/$INSTALLER --help
+	 exit 0
+fi
+echo "Installing $PRODUCT $VERSION ..."
+$BASEDIR/$INSTALLER $INSTALLER_OPTIONS
+EOEXP
+
+( cd $BUILDDIR && tar rf data.tar expander.sh )
+
+# ##### Compress, wrap into setup, beautify, polish, distribute! 
+info "Compressing and uuencoding ..."
+( cd $BUILDDIR && $COMPRESS < data.tar | uuencode $BASE64 data.tgz > data.uu )
+
+TMPDIR=/tmp/setup\$\$
+DATE=`date`
+info "Packaging the setup.exe ..."
+cat > $BUILDDIR/setup.exe << EOSETUP
+#!/bin/sh
+#############################################################
+# This is a self-unpacking package. You may run with --help 
+# to know more. 
+# Produced with $SDE_NAME V$SDE_VERSION 
+#               $SDE_COPYRIGHT
+#
+#   +------------------------------------------------------->
+#   |  This will install $PRODUCT $VERSION
+#   +------------>
+#
+# Built on $DATE
+#############################################################
+mkdir $TMPDIR && cat \$0 | (cd $TMPDIR && \\
+uudecode -o /dev/stdout | $UNCOMPRESS | tar xf - && \\
+sh expander.sh \$* ) ; rm -rf $TMPDIR ; exit 0
+EOSETUP
+
+cat $BUILDDIR/data.uu >> $BUILDDIR/setup.exe
+chmod 755 $BUILDDIR/setup.exe
+
+FINAL="${PRODUCT}-${VERSION}.exe"
+if test -f "$FINAL" ; then
+	if test "$OVERWRITE" == "1"; then
+		mv "$FINAL" "${FINAL}.bak"
+		warn "Moved the existing file $FINAL --> ${FINAL}.bak"
+	else
+		error "Will not overwrite existing file $FINAL !"
+	fi	
+fi
+mv $BUILDDIR/setup.exe "$FINAL"
+info "Finished packaging $FINAL"
+
+rm -rf $BUILDDIR
+

@@ -1,0 +1,35 @@
+#!/usr/bin/perl
+
+# Find-In-Path V1.0
+
+if ( $#ARGV < 1 ) {
+	warn "Find-In-Path V1.0\n";
+	warn "fip [-f] [path] [expression]\n";
+	die "\n[ERROR] Insufficient arguments.\n";
+}
+
+if ( $ARGV[0] eq "-f" ) { $FULLMATCH++; shift(@ARGV); warn "[INFO] Full match enabled.\n"; }
+$PATH = shift(@ARGV);
+$EXPR = shift(@ARGV);
+$P = $ENV{$PATH};
+@P = split(/:/, $P);
+
+$cnt = 1;
+
+foreach $p ( @P ) {
+	 warn "[WARNING] '$p' is not a directory. (skipped)\n", next if ! -d $p;
+	 warn "[WARNING] Not access permission to '$p'. (skipped)\n", next if ! -x $p;
+	 opendir(dir,"$p") || die "[ERROR] Could not read in dir '$p'. (skipped)",next;
+	 @files = readdir(dir);
+	 closedir(dir);
+	 if ($FULLMATCH) { 
+		  @match = grep( /^${EXPR}$/, @files);
+    } else {
+		  @match = grep( /${EXPR}/, @files);		  
+	 }
+    # Thanks to Frank, more usable output
+    @match = grep( ! -d "$p/$_" && s/^(.*)$/ sprintf("%s\/%s",$p,$1) /e, @match);
+    system("ls -l ".join(" ",@match)) unless $#match < 0;
+    # @match = grep( s/^(.*)$/ sprintf("%d: %s\/%s",$cnt++,$p,$1) /e, @match);
+	 # print join("\n",@match) . "\n" if $#match >= 0;
+}	

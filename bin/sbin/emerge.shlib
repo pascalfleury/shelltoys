@@ -1,0 +1,141 @@
+#!/bin/bash
+
+# Some shell library functions for the emerge-* tools.
+
+# Stops the info-lock on the PID.
+# this returns 1 if the PID file exists.
+function singleton_stop() {
+    if [ -f $PIDFILE ]; then
+	[ -n "$PIDFILE" ] && rm $PIDFILE
+	return 1
+    fi
+    return 0
+}
+
+# Tries to start an instance. If a process whose PID
+# is given in the file PIDFILE exists, it returns
+# and tells that PID. Otherwise, it returns 0.
+# For a singleton, it's enough to simply fail
+# if the return value is != 0
+function singleton_script() {
+    local PROGNAME=${1:-$(basename $0)}
+    PIDFILE=/var/lock/${PROGNAME}.pid
+
+    if [ -f $PIDFILE ] ; then
+	PID=$(< $PIDFILE)
+	kill -0 $PID > /dev/null 2>&1
+	[ $? == 0 ] && return 0 # Process exists
+	echo "Removing stale PID file $PIDFILE" 1>&2
+    fi
+    echo $$ > $PIDFILE
+    trap singleton_stop EXIT
+    return 1
+}
+
+
+
+
+function start_log() {
+    local LOGNAME=${1:-$(basename $0)}
+    LOGFILE=/var/log/${LOGNAME}.log
+    if [ -f $LOGFILE ]; then
+	mv $LOGFILE ${LOGFILE}.old
+    fi
+}
+
+function info() {
+    if [ -z "$LOGFILE" ]; then
+	echo "[INFO] $*"
+    else
+	echo "[INFO] $*" | tee -a $LOGFILE
+    fi
+}
+
+function warn() {
+    echo "[WARNING] $*" 1>&2
+    if [ -n "$LOGFILE" ]; then
+	echo "[WARNING] $*" >> $LOGFILE
+    fi
+}
+
+function error() {
+    echo "[ERROR] $*" 1>&2
+    if [ -n "$LOGFILE" ]; then
+	echo "[ERROR] $*" >> $LOGFILE
+    fi
+    exit 1
+}
+
+
+IMPORT_CACHEFILE=/var/cache/emerge-lib/emerge-info.txt
+mkdir -p $(dirname $IMPORT_CACHEFILE)
+function emerge_import() {
+    local cars='[a-zA-Z_]'
+    local ALLVARS=$(echo $* | sed 's/  */ /g' | tr ' ' '|')
+    [ -n "$ALLVARS" ] || ALLVARS=$cars
+    if [ ! -f $IMPORT_CACHEFILE -o /etc/make.conf -nt $IMPORT_CACHEFILE ]; then
+	warn "Updating emerge info cache..."
+	emerge --info > $IMPORT_CACHEFILE
+	warn "done."
+    fi
+    local vals=$(cat $IMPORT_CACHEFILE | egrep "(${ALLVARS}${cars}*)=" | tr '\n' ';' | sed 's/\(${cars}${cars}*=\)/export \1/g')  
+    eval $vals
+}
+
+
+function emerge_packlist() {
+    local retvar=$1 ; shift
+    local args=${*:--uDp --newuse}
+    eval "$retvar=( $(emerge $args --nospinner --color n --quiet world | sed 's/^ *\[[^]]*\] */=/g' | awk '{print $1}') )"
+}
+
+
+function cache_check() {
+    local cache=$1
+    [ -n "$cache" ] || exit 77
+    if [ -z "$cache" ]; then
+	cache=/var/cache/$(basename $0)/list
+    fi
+    [ -d $(dirname $cache) ] || mkdir -p $(dirname $cache)
+    touch $cache
+}
+
+function cache_add() {
+    local cache=$1
+    local pack=$2
+    [ -n "$cache" ] || exit 77
+    [ -n "$pack" ] || return 1
+    cache_check $cache
+    cat $cache | grep -v "$pack" > ${cache}_tmp
+    echo $pack >> ${cache}_tmp
+    mv ${cache}_tmp $cache
+}
+
+function cache_remove() {
+    local cache=$1
+    local pack=$2
+    [ -n "$cache" ] || exit 77
+    [ -n "$pack" ] || return 1
+    cache_check $cache
+    cat $cache | grep -v "$pack" > ${cache}_tmp
+    mv ${cache}_tmp $cache
+}
+
+function cache_list() {
+    local cache=$2
+    local retvar=$1
+    [ -n "$cache" ] || exit 77
+    [ -n "$retvar" ] || exit 77
+    cache_check $cache
+    eval "$retvar='$(<$cache)'"
+}
+
+function cache_has() {
+    local cache=$1
+    local pack=$2
+    [ -n "$cache" ] || exit 77
+    [ -n "$pack" ] || exit 77
+    cache_check $cache
+    RV=$(cat $cache | grep $pack | wc -l)
+    return $RV
+}

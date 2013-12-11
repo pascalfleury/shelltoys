@@ -1,0 +1,10 @@
+#!/bin/bash
+VERSION=$1
+if [ -z "$1" ] ; then
+    echo "Specify a version!" 1>&2
+    exit 1
+fi
+. /etc/make.conf
+cd $PORTDIR/kde-base
+ls */*${VERSION}* | sed 's,.*/,=kde-base/,g' | sed 's/.ebuild/ ~x86/g'
+

@@ -1,0 +1,29 @@
+#!/bin/bash
+COMMAND=$1
+shift
+ARGS=$*
+
+##### See if wrapping necessary
+WRAP=1
+if ! test -z "`which cygpath 2>/dev/null`" ; then WRAP=0; fi # Cygwin box
+if test -z "`which gdb 2>/dev/null`"; then WRAP=0; fi # No gdb
+
+if test $WRAP == 0 ; then
+	$COMMAND $ARGS
+else
+	# try to find out if it is libtool wrapped
+	if test `file $COMMAND | grep shell | wc -l` > 0 ; then
+		GDB="libtool --mode=execute gdb"
+		echo "Libtool instrumented executable."
+	else
+		GDB="gdb"
+	fi
+	# Run the debugger
+	echo "$GDB $COMMAND --> $ARGS"
+	$GDB $COMMAND <<EOC;
+run $ARGS
+bt
+quit
+EOC
+
+fi

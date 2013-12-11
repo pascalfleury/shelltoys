@@ -1,0 +1,18 @@
+#!/bin/sh
+
+if test -z "$KONSOLE_DCOP_SESSION" ; then
+    exit 0
+fi
+
+export CD=`pwd`/
+NAME=`echo $CD | sed 's,.*/Devel/\([^/]*\)/.*,\1,'`
+if test "$NAME" = "$CD" ; then
+  NAME=`echo $CD | sed 's,.*/Projects/\([^/]*\)/.*,Project \1,' `
+fi
+if test "$NAME" = "$CD" ; then
+  NAME="Shell"
+fi
+
+if ! test -z "$NAME" ; then
+	dcop $KONSOLE_DCOP_SESSION renameSession "$NAME"
+fi

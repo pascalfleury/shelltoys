@@ -1,0 +1,37 @@
+#!/bin/bash
+. $(dirname $0)/emerge.shlib
+
+# Complement to the emerge-cronjob.sh script. This one
+# will read the produced packages, and enable the user
+# to install the pre-compiled packages.
+# It will then remove the pre-compiled packages so as
+# to save disk space. It also maintains the list of
+# packages it has installed, so as to not remove
+# packages it did not yet use.
+
+[ singleton_script ] || error "Process with pid $? already running. Aborting."
+
+emerge_import PKGDIR PORTDIR DISTDIR
+
+CACHEFILE=$PKGDIR/update-ready.db
+LOGFILE=/tmp/emerge-update-$$.log
+
+echo "Checking for built packages..."
+emerge -uDa --newuse --usepkgonly --quiet world 
+
+# Iterate over packages, check which ones have been installed at all.
+cache_list PACKS $CACHEFILE
+for package in ${PACKS[*]}; do
+    if [ -d "/var/db/pkg/$(echo $package | sed 's/^=//g' )" ]; then
+	echo "Package $package already installed."
+	rm -f $PKGDIR/All/$(echo $package | sed 's,.*/,,g')*
+	cache_remove $CACHEFILE $package
+    else
+	if [ ! -f $PKGDIR/All/$(echo $package | sed 's,.*/,,g').tbz2 ]; then
+	    echo "$package has no package file."
+	fi
+    fi
+done
+
+
+

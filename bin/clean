@@ -1,0 +1,22 @@
+#!/usr/bin/perl
+
+# ##### DESCRIBE HERE THE PATTERNS OF FILES WHICH SHOULD BE ELIMINATED
+
+# General
+$P = " *% *.backup .nfs* ";
+# Latex stuff
+$P .= " *.bbl *.dvi *.aux *.blg *.idx *.lof *.toc *.lot *.log ";
+# Programming stuff
+$P .= " *.o core *.pyc ";
+# Simple backups
+$P .= " *.BAK *.bak *~ textedit.* .save* ";
+# Purify remains
+$P .= " .pure *_pure_* ";
+
+######################## RECOMMENDATION: DO NOT EDIT BELOW #############################
+$R="rm -f";$B="\b";$S='*';sub  p{print@_}sub  w{p$_[0]; for$i(1..$_[1]){p$_[2]}}$|=1;sub 
+n{p"\n"}$P=~s/((^)\s+|\s+($))//go;$P=~s/\s\*\s/\s/g; @A=split(/\s+/,$P);$C=$#A;@I=@ARGV;
+if($#I<0){@I=('.');$X++;$S='#'}sub d{system@_}while($T=shift(@I)){if(-d$T){w("Cleaning".
+$T. ": 0 |",$C+1,'-');w("| 100%",$C+7,$B); foreach$E(@A){if($?){n;exit($?)}p$S;if($X){d(
+"$R $E")} else {$R=~s/\*/\\*/g;$R=~s/~/\\~/g;d("find $T -name '$E' -exec $R {} \\;")}}w(
+$B,$C+3,$B);w("Done.",$C*2," ");n}}

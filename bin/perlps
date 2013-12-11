@@ -1,0 +1,6 @@
+#!/bin/sh
+
+FILE=`perldoc -l $1`
+TMPPS=/tmp/perldoc_tmp$$
+pod2man $FILE | groff -m man -ops > $TMPPS 2>/dev/null
+(gv $TMPPS && rm -f $TMPPS ) &

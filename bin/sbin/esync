@@ -1,0 +1,6 @@
+#!/bin/bash
+emerge --sync
+~/bin/kde-unstable 3.5 > /etc/portage/package.keywords/kde
+~/bin/koffice-unstable > /etc/portage/package.keywords/koffice
+layman -S
+emerge -uDa --newuse world

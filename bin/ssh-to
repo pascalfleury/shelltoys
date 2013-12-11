@@ -1,0 +1,30 @@
+#!/bin/sh
+LOCATION=`basename $0`
+HOST=`echo $LOCATION | sed 's,.*@,,'`
+USER=`echo $LOCATION | sed 's,@.*,,'`
+if test "$USER" != "$HOST" ; then
+	echo "Connecting to $HOST as $USER ..."
+	USER="-l $USER"
+else
+	USER=""
+fi
+
+# This changes the tab on konsole to the host you are connecting to
+if test "$KONSOLE_DCOP_SESSION" != "" ; then
+    SESSION_NAME=`dcop $KONSOLE_DCOP_SESSION sessionName`
+    SCHEMA_NAME=`dcop $KONSOLE_DCOP_SESSION schema`
+    dcop $KONSOLE_DCOP_SESSION renameSession "$HOST" &
+    dcop $KONSOLE_DCOP_SESSION setSchema "${HOST}.schema" &
+fi
+
+xhost +$HOST 2> /dev/null
+
+ssh $HOST $USER $*
+
+if test "$SESSION_NAME" != "" ; then
+    dcop $KONSOLE_DCOP_SESSION renameSession "$SESSION_NAME" &
+fi
+
+if test "$SCHEMA_NAME" != "" ; then
+    dcop $KONSOLE_DCOP_SESSION setSchema "$SCHEMA_NAME" &
+fi

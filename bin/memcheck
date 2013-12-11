@@ -1,0 +1,26 @@
+#!/bin/bash
+COMMAND=$1
+shift
+ARGS=$*
+
+##### See if wrapping necessary
+WRAP=1
+if test -z "`which valgrind 2>/dev/null`"; then WRAP=0; fi # No gdb
+
+if test $WRAP == 0 ; then
+	$COMMAND $ARGS
+else
+	TMPFILE=/tmp/memcheck_$$_
+	TOOL="valgrind --log-file=$TMPFILE --tool=memcheck --trace-children=yes" # --show-reachable=yes --leak-check=yes"
+	# try to find out if it is libtool wrapped
+	if test `file $COMMAND | grep shell | wc -l` > 0 ; then
+		PREFIX="libtool --mode=execute"
+		echo "Libtool instrumented executable."
+	fi
+	# Run the debugger
+	echo "$PREFIX $TOOL $COMMAND $ARGS"
+	$PREFIX $TOOL $COMMAND $ARGS
+	cat ${TMPFILE}*
+	ls -l ${TMPFILE}*
+	rm -f ${TMPFILE}*
+fi

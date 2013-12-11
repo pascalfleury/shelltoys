@@ -1,0 +1,90 @@
+#!/usr/bin/perl
+
+use strict;
+use File::Spec;
+use File::Basename;
+
+my %DEPS;
+my @stack;
+
+# Crude argument parsing
+my @LIBS = @ARGV;
+
+die "Usage: $0 <lib|executable>\n"
+    unless @LIBS;
+
+# Seed the stack with the user queries
+@LIBS = map { File::Spec->rel2abs($_) } @LIBS;
+push(@stack, @LIBS);
+
+# Collect the dependencies
+while ( my $lib = pop(@stack) ) {
+	#warn "check $lib"; #DBG
+	next if exists $DEPS{$lib};
+
+	# find out the deps
+	warn "Scanning $lib ...\n";
+	open(LDD,"ldd $lib |") || die "Could not get deps for $lib !";
+	my %libdeps = map { split(/\s*=>\s*/o,$_,2) } <LDD>;
+	close(LDD);
+
+	# constructing the data point
+	my $libname = basename($lib);
+	my @ldeps = 	map { File::Spec->rel2abs($_) }
+			grep { !/^\s*$/o } 
+			map { (m/^\s*(.*\S)\s*\([^\)]*\)/)[0] } 
+			values %libdeps;
+	$DEPS{$lib} = {
+		libname => $libname,
+		libpath => $lib,
+		deps    => \@ldeps,
+	};
+	#warn "Stocked $lib"; #DBG
+
+	# Make the whole beast recursive:
+	push(@stack, @ldeps);
+} 
+
+
+#use Data::Dumper;
+#print Dumper( \%DEPS );
+
+
+# Prune the graph if a list of libs is given
+if ( @LIBS > 1 ) {
+	my %keep = map { ($_ => 1) } @LIBS;
+	foreach my $k ( keys %DEPS ) {
+		next if $keep{$k};
+		delete $DEPS{$k};
+	}
+}
+
+
+# Make the graph
+my $graph =<<EOH;
+digraph {
+	rankdir = "LR";
+	orientation = "landscape";
+	center = "true";
+
+EOH
+
+foreach my $lib ( values %DEPS ) {
+	my $libnode = $lib->{libpath};
+	$libnode =~ s/[^\w\d]/_/go;
+	$graph .= "	$libnode  [ label=\"$lib->{libname}\" ];\n";
+	foreach my $dep ( @{$lib->{deps}} ) {
+		next unless exists $DEPS{$dep};
+		my $depnode = $dep;
+		$depnode =~ s/[^\w\d]/_/go;
+		$graph .= "	$libnode -> $depnode ;\n";
+	}
+	$graph .= "\n\n";
+}
+
+
+$graph .=<<EOF;
+};
+EOF
+
+print $graph;

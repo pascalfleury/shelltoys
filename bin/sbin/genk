@@ -1,0 +1,6 @@
+#!/bin/sh
+CMD="genkernel --no-mrproper --no-clean --menuconfig --install --gensplash all"
+echo $CMD
+$CMD
+
+module-rebuild rebuild

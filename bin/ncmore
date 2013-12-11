@@ -1,0 +1,2 @@
+#!/bin/sh
+more $* | sed 's/#.*//g' | uniq

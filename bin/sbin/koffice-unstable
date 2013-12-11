@@ -1,0 +1,4 @@
+#!/bin/bash
+. /etc/make.conf
+cd $PORTDIR/app-office
+ls */*$1* | sed 's,.*/,=app-office/,g' | sed 's/.ebuild/ ~x86/g'

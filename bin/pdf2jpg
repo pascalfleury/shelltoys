@@ -1,0 +1,6 @@
+#!/bin/sh
+DOCUMENT=$1
+echo "Document $DOCUMENT is " `ls -lh $DOCUMENT| awk '{ print $5 }'`
+STUB=`echo $DOCUMENT | sed 's/\.[^\.]*$//'`
+gs -sDEVICE=jpeg -r300x300 -dBATCH -dNOPAUSE -sOutputFile=${STUB}_p%02d.jpg -dJPEGQ=100 $DOCUMENT | grep age
+

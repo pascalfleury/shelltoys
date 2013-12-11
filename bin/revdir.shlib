@@ -1,0 +1,66 @@
+# Lib to manage revisioned files in a dir
+#
+# It enables you to have revisioned content for a given
+# token (from some namespace, like a filesystem).
+# You can open th efile, write to it, then close it.
+# Only if it has changed will it be updated.
+
+
+SUCCESS=0
+FAILURE=1
+
+# Creates/checks the rev-dir
+# rev_setup(rev_REVDIR)
+function rev_setup() {
+	rev_REVDIR=$1
+	[ -n "$rev_REVDIR" ] || return $FAILURE
+	[ -d $rev_REVDIR ] || mkdir -p $rev_REVDIR || return $FAILURE
+	return $SUCCESS
+}
+
+
+function rev_open() {
+	rev_TOKEN=$1
+	rev_FILEREF=$2
+	rev_TOKENREF=$3
+echo "rev_TOKEN=$rev_TOKEN rev_FILEREF=$rev_FILEREF rev_TOKENREF=$rev_TOKENREF"
+	rev_UUID=$(echo "$rev_TOKEN" | md5sum | sed 's/[- ]//g')
+	rev_TS=$(date +%Y%m%d-%H%M%S)
+	rev_EXT=__rev$RANDOM
+	rev_BASETOKEN=$(basename "$rev_TOKEN" | sed 's/\.[^\.]*$//g')
+	rev_TOKENDIR=$rev_REVDIR/${rev_UUID}-${rev_BASETOKEN}-revs
+	mkdir -p $rev_TOKENDIR || return $FAILURE
+	rev_META=$rev_TOKENDIR/meta$rev_EXT
+	echo "rev_TOKEN=$rev_TOKEN" > $rev_META
+	echo "rev_BASETOKEN=$rev_BASETOKEN" >> $rev_META
+	echo "rev_LINKFILE=${rev_UUID}-$(basename $rev_TOKEN)" >> $rev_META
+	echo "rev_PID=$$" >> $rev_META
+	TEMPFILE=$rev_TOKENDIR/${rev_TS}${rev_EXT}
+	eval "$rev_FILEREF='$TEMPFILE'"
+	rev_TOKENREF=${rev_TOKENREF:-none}
+	eval "$rev_TOKENREF='${rev_UUID}-${rev_BASETOKEN}'"
+	return $SUCCESS
+}
+
+
+function rev_close() {
+	rev_TEMPFILE=$1
+	FORCE=$2
+	rev_TOKENDIR=$(dirname $rev_TEMPFILE)
+	rev_REVDIR=$(dirname $rev_TOKENDIR)
+	rev_EXT=$(echo $rev_TEMPFILE | sed 's/.*__rev/__rev/g')
+	rev_META=$rev_TOKENDIR/meta$rev_EXT
+	[ -f $rev_META ] && . $rev_META
+	if [ -f $rev_REVDIR/$rev_LINKFILE ]; then
+		DIFF=$(diff $rev_REVDIR/$rev_LINKFILE $rev_TEMPFILE | wc -l)
+		if [ $DIFF == 0 -a -z "$FORCE" ]; then
+			rm $rev_META $rev_TEMPFILE
+			return $SUCCESS
+		fi
+	fi
+	rev_FINALFILE=$(echo $rev_TEMPFILE | sed 's/__rev[0-9]*$//g')
+	mv $rev_TEMPFILE $rev_FINALFILE
+	rm -f $rev_REVDIR/$rev_LINKFILE && ln -s $rev_FINALFILE $rev_REVDIR/$rev_LINKFILE
+	rm -f $rev_META
+	return $SUCCESS
+}
