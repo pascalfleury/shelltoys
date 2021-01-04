@@ -1,0 +1,3 @@
+#!/bin/bash
+# Will sum up the numbers given on stdin, one number per line
+tr '\n' '+' | sed 's/\+$/\n/' | bc -l | sed 's/^/TOTAL: /'

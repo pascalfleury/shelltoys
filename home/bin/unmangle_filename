@@ -1,0 +1,15 @@
+#!/bin/bash
+
+for file in "$@"; do
+    newfile="${file}"
+    newfile="${newfile//%E2/â}"
+    newfile="${newfile//%E4/ä}"
+    newfile="${newfile//%E7/ç}"
+    newfile="${newfile//%E8/è}"
+    newfile="${newfile//%E9/é}"
+    newfile="${newfile//%EA/ê}"
+    newfile="${newfile//%EB/ë}"
+    newfile="${newfile//%F4/ô}"
+    newfile="${newfile//%F6/ö}"
+    [[ "${file}" != "${newfile}" ]] && mv "${file}" "${newfile}"
+done
