@@ -1,0 +1,135 @@
+#!/usr/bin/perl
+# Auto-colorify and simplify commands output.
+
+use Data::Dumper;
+use Term::ANSIColor;
+$Term::ANSIColor::AUTORESET = 1;
+
+sub substitute {
+  my ($text, $fields) = @_;
+  my %exch = map { split /\s*=\s*/, 2 } split(/\s*,\s*/o, $fields);
+  foreach $key (keys(%exch)) {
+    $text =~ s/${key}/$exch{$key}/g;
+  }
+  return $text;
+}
+
+while ($_ = <STDIN>) {
+  # skip some junk I never read anyway
+  next if / thread.cc:17[78]\d\]/o;
+  next if / thread.cc.*\/build\/cas\//o;
+
+  # Shorten the line about Deprecated GCIDS
+  s#(^.*Deprecated GCIDs seen in use: .{80}).*#$1 ... %yellow%[truncated]#go;
+
+  # Python stack traces
+  s,^( *([\w\.\-]+)(Error|Exception))(:.*),%white%%on_red%$1%white%$4,go;
+
+  # C++ test logs/errors
+  s|^(\[ *OK *\])( .*)|%bold white on_green%$1%white%$2|go;
+  s|^(\[ *RUN *\])( .*)|%bold white on_blue%$1%white%$2|go;
+  s|^(\[ *PASSED *\])( .*)|%bold white on_green%$1%white%$2|go;
+  s|^(\[ *FAILED *\])( .*)|%bold white on_red%$1%bold white%$2|go;
+
+  s|^(Expected:)|%bold white%$1%white%|go;
+  s|^(  Actual:)|%bold white%$1%white%|go;
+
+  # BUILD messages
+  s|^(____[^ _]+.*)|%green%$1|go;
+  #s|^(.*)(PASSED)(.*)|$1%green%$2%reset%$3|go;
+  #s|^(.*)(FAILED)(.*)|$1%bold red%$2%reset%$3|go;
+
+  # Metaweb specific messages
+  s|^(Found.*COPY-SUCCESSFUL.*nothing needs to be done)|%green%$1|go;
+  s|^(Found the following potential causes.*of failure.*)|%white%%on_red%$1|go;
+  s|^(Pipeline failed with an error)|%white%%on_red%$1|go;
+
+  # GBash unit tests
+  s|^(__________ +Test *.*running[\. ]*) *$|%magenta%$1|go;
+  s|^(__________ +Test *.*passed.) *$|%green%$1|go;
+  s|^(__________ +Test *.*failed.) *$|%red%$1|go;
+
+  # filename simplification
+  s|^/usr/crosstool/.*-unknown-linux-gnu/([^:]+:(\d+:)?)|%blue%<gcc>/$1|go;
+  # C++ warnings/errors
+  s|^([^:]+:\d+:)(.*)(error:)|$1%white%%on_red%$2$3|go;
+  s|(note):|%green%$1:%green%|go;
+  s|\s*( instantiated from)|%yellow%$1:|go;
+
+  # Filter C++ STL types
+  s|__u::||go; # some new stdlib junk
+  s|basic_string<char, *(std::)?char_traits<char>, *(std::)?allocator<char> *> *|string|go;
+  s|__gnu_cxx::hash_map<([^,]+), *([^,]+), *__gnu_cxx::hash<\1>, *(std::)?equal_to<\1>, *(std::)?allocator<\2> > *|hash_map<$1, $2>|go;
+  s|__first\.__gnu_cxx::__normal_iterator<_Iterator, _Container>::(\S+) \[with _Iterator = (.+), _Container = (.+)\]\(\)|$1 of $3::iterator|go;
+  s|vector<(.+), std::allocator<\1 ?> >|vector<$1>|go;
+  s|set<(.+), (\w+)<(\1 ?)>, std::allocator<\1 ?> > >|set<$1, $2<$3> >|go;
+  s|__gnu_cxx::__normal_iterator<(.+), (.+) *>|$2::iterator|go;
+
+  # Mental substitutions...
+  s|(.*) \[with (.*?)\](.*)|substitute($1, $2), $3|ge;
+
+  # Test errors
+  s|(doesn't parse as a \S*)|%red%$1%reset%|go;
+
+  # do the namespaces
+  s|([\w\d\&\*])<unnamed>::|$1 |go;
+  s|<unnamed>::||go;
+  s|\bstd::| |go;
+
+  # colorize log messages
+  s|^([\d:\.]+: )?(I\d+.*: *\d+\])( .*)$|%green%$1$2%clear%$3|go;
+  s|^([\d:\.]+: )?(W\d+.*: *\d+\])( .*)$|%yellow%$1$2%white%$3|go;
+  s|^([\d:\.]+: )?(E\d+.*: *\d+\])( .*)$|%red%$1$2%white%$3|go;
+  s|^([\d:\.]+: )?(F\d+.*: *\d+\])( .*)$|%red%$1$2%white%$3|go;
+
+  # colorize the ontology files.
+  s#^([^:]*/)(\w+)(\.(directed|undirected):)([^\|]*)\|([^\|]*)\|([^\|]+)(.*)#%blue%$1%yellow%$2%blue%$3%green%$5%white%|%red%$6%white%|%magenta%$7%white%$8#go;
+  s#^([^:]*/)(\w+)(\.property:)([^\|]*)\|([^\|]+)(.*)#%blue%$1%white%$2%blue%$3%green%$4%white%|%magenta%$5%white%$6#go;
+
+  # emphasize equivalence relations.
+  s#%yellow%(equivalence)%#%black%%on_yellow%$1%#go;
+
+  # mark the log separators I use when playing
+  s|^(####.*)|%blue on_white%$1|go;
+
+  # blaze static analyzer
+  s|(__Results .* of target)|$1%bright_green%|go;
+  s/((Missing|Unnecessary|Possibly unnecessary) dependencies)/  %yellow%$1%reset%/go;
+  s|Results unavailable:|%red%$1%reset%|go;
+  s/(Indirect dependencies)/  $1/go;
+  s|^(  //[^\s]*)|%bright_white%$1%reset%|go;
+
+  # RefCon scorer output colorifying
+  s/(\[(NAME|RELA|RELATED|TYPE)\] *)/%bright_yellow%$1%bright_white%/go;
+  s/(\b(NAME|RELA|RELATED|TYPE)\| *)/%bright_yellow%$1%bright_white%/go;
+  s/\bSCORE_(RECON_NEW)_SCORING\b/%yellow%$1%bright_white%/go;
+  s/\bSCORE_(RECON\b)/%green%$1%bright_white%/go;
+  s/\bSCORE_(CLUSTERS\b)/%bright_blue%$1%bright_white%/go;
+
+  # Flags error messages
+  # FATAL Flags parsing error: Unknown command line flag 'model_extractin_dir'. Did you mean: model_extraction_dir?
+  s/(FATAL[^:]*:)( .*Unknown .*flag ')(\w+)('.*Did you mean: )(\w+)(\?.*)/%bold red%$1%white%$2%bold bright_white%$3%white%$4%bold bright_white%$5%white%$6/go;
+
+  # some special cases
+  s|( *Now processing key:.*)|%blue on_white%$1|go;
+  s|( *Searching for property.*)|%blue on_white%$1|go;
+
+  # Highlight some urls
+  s|(.https?://.*/Client.html.)|%blue_on_white%$1%reset%|go;
+
+  # some typical logging I use
+  s|(######*[^#]*######*)|%bold blue on_white%$1%reset%|go;
+
+  # Process the color tags
+  @items = split /%(\w[\w ]*\w)%/o;
+  print colored("", "reset"), shift(@items);
+  while ($#items >= 1) {
+    my $color = shift(@items);
+    my $text = shift(@items);
+    eval {
+      print colored($text, $color);
+    };
+    print "%$color%$text" if $@;
+  }
+  print @items;
+}
