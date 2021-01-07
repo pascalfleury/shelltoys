@@ -1,0 +1,16 @@
+#!/bin/bash
+
+BASE=1024
+FORMAT="%.1f"
+
+# Takes a big number, makes it human-readable (in k, M, G, etc.)
+for number in $( cat ); do
+    mult=("" "k" "M" "G" "T" "P" "E")
+    pos=0
+    while [ $number -gt $BASE ] ; do
+	number=$((number/BASE))
+	#echo "[DBG] number=$number" #DBG
+	pos=$((pos+1))
+    done
+    printf "${FORMAT}%s\n" $number ${mult[$pos]}
+done

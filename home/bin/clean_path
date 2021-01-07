@@ -1,0 +1,13 @@
+#!/usr/bin/perl
+
+# Simply cleans up the PATH in removing directories that appear twice.
+# It will keep only the first instance of such a dir. It will also
+# filter out directories that simply don't exist.
+
+$PATH = $ARGV[0];
+
+%seen = {};
+@parts = grep { -d $_ }
+         grep { !$seen{$_}++ }
+         split(/:/, $PATH);
+print join(":", @parts), "\n";

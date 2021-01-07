@@ -1,0 +1,100 @@
+#!/bin/bash
+# Simple shell that runs
+#
+# this script looks into /etc/cron.[hourly|daily|weekly|monthly]
+# for scripts to be executed. The info about last run is stored in
+# /var/spool/cron/lastrun
+
+source $HOME/.bashrc
+
+readonly CRONDIR=${CRONDIR:-$HOME/crondir}
+readonly LOCKDIR=${LOCKDIR:-$CRONDIR/.lastrun}
+
+readonly MARKER="#####"
+declare -i num_scripts=0
+
+cat <<EOF
+${MARKER} $(basename $0) running on $(date)
+USER   : $(whoami)
+HOST   : $(hostname)
+CRONDIR: $CRONDIR
+LOCKDIR: $LOCKDIR
+${MARKER}
+EOF
+
+LOCKFILE=${LOCKDIR}/lock
+[ -d $LOCKDIR ] || mkdir -p $LOCKDIR
+[ -d $CRONDIR ] || mkdir -p $CRONDIR
+
+# Make sure we're not running multiple instances at once.
+# Try twice to lock, otherwise give up.
+for ((i = 0; i < 2; i = i + 1)); do
+  ln -sn $$ ${LOCKFILE} 2>/dev/null && break
+
+  # lock failed, check for a running process.
+  # handle both old- and new-style locking.
+  cronpid=$(readlink ${LOCKFILE} 2>/dev/null) ||
+  cronpid=$(cat ${LOCKFILE} 2>/dev/null) ||
+  continue        # lockfile disappeared? try again
+
+  # better than kill -0 because we can verify that it's really
+  # another run-crons process
+  if [[ $(</proc/${cronpid}/cmdline) == $(</proc/$$/cmdline) ]] 2>/dev/null; then
+    # whoa, another process is really running
+    echo "Still running as PID ${cronpid}"
+    exit 0
+  else
+    rm -f ${LOCKFILE}
+  fi
+done
+
+# Check to make sure locking was successful
+if [[ ! -L ${LOCKFILE} ]]; then
+  echo "Can't create or read existing ${LOCKFILE}, giving up"
+  exit 1
+fi
+
+# Set a trap to remove the lockfile when we're finished
+trap "rm -f ${LOCKFILE}" 0 1 2 3 15
+
+for BASE in quadhourly bihourly hourly daily weekly monthly ; do
+  CURRENTDIR=$CRONDIR/cron.${BASE}
+  test -d $CURRENTDIR || continue
+  
+  if [ -e ${LOCKDIR}/cron.$BASE ] ; then
+    case $BASE in
+      quadhourly)  TIME="-cmin +16" ;;    #>= 15 mins, 1 min -=> 16 min
+      bihourly)    TIME="-cmin +32" ;;    #>= 30 mins, 2 mins -=> 32 min
+      hourly)      TIME="-cmin +65" ;;    #>= 1 hour, 5 min -=> +65 min
+      daily)       TIME="-cmin +1445" ;;  #>= 1 day, 5 min -=> +1445 min
+      weekly)      TIME="-cmin +10085" ;; #>= 1 week, 5 min -=> +10085 min
+      monthly)     TIME="-cmin +44645" ;; #>= 31 days, 5 min -=> +44645 min
+    esac
+
+    find ${LOCKDIR} -name cron.$BASE $TIME -exec rm {} \; &>/dev/null || true
+  fi
+
+  # if there is no touch file, make one then run the scripts
+  if [ ! -e ${LOCKDIR}/cron.$BASE ] ; then
+    touch ${LOCKDIR}/cron.$BASE
+    
+    set +e
+    for SCRIPT in $CURRENTDIR/* ; do
+      if [[ -x $SCRIPT && ! -d $SCRIPT ]]; then
+        echo "${MARKER} ${SCRIPT#${CRONDIR}}: starting..."
+        (( num_scripts++ ))
+        start_time=$(date +%s)
+        $SCRIPT
+        end_time=$(date +%s)
+        run_time=$(( end_time - start_time ))
+        echo "${MARKER} ${SCRIPT#${CRONDIR}}: ran for ${run_time}s"
+      fi
+    done
+  fi
+done
+
+# Clean out bogus cron.$BASE files with future times
+touch ${LOCKDIR}
+find ${LOCKDIR} -newer ${LOCKDIR} -exec /bin/rm -f {} \; &>/dev/null || true
+
+echo "${MARKER} $(basename $0) terminated ${num_scripts} tasks on $(date)" 

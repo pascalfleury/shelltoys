@@ -1,0 +1,48 @@
+#!/bin/bash
+#
+# Will wait until the given time/date, and then run the rest
+# of the command line.
+#
+# Example:
+#   wait_until 12:00 ; <command>
+#
+
+# This is the wait batch. the script prints progress for each batch.
+declare -i BATCH_SIZE=600
+
+function fatal() {
+  echo -e "\e[0;93mERROR: \e[1;37m$*\e[0m"
+  exit 1
+}
+
+function info() {
+  local msg=$1
+  shift
+  echo -e "\e[0;44m${msg}\e[1;37m$*\e[0m"
+}
+
+(( $# == 0 )) && fatal "No date/time specified!"
+DEADLINE=$1
+
+declare -i DEADLINE_S=$(date -d "${DEADLINE}" +%s)
+(( DEADLINE_S > 0 )) || fatal "Invalid date/time spec '${DEADLINE}'"
+declare -i NOW=$(date +%s)
+DEADLINE_HR=$(date -d "${DEADLINE}")
+# Heuristic to take the next day if the specified date seems to contain only time.
+if (( ${#DEADLINE} < 7 )); then
+  while (( NOW > DEADLINE_S )); do (( DEADLINE_S += 86400 )); done
+  DEADLINE_HR=$(date -d "@${DEADLINE_S}")
+fi
+(( NOW > DEADLINE_S )) && fatal "Cannot wait for date/time in the past! (${DEADLINE_HR})"
+DELAY=$(( DEADLINE_S - NOW ))
+
+info "Waiting until" " ${DEADLINE_HR}"
+declare -i DELTA=$(( DELAY % BATCH_SIZE ))
+sleep ${DELTA}
+DELAY=$(( DELAY - DELTA ))
+while (( DELAY > 0 )); do
+  info "Remaining:" " ${DELAY} seconds.."
+  sleep ${BATCH_SIZE}
+  DELAY=$(( DELAY - BATCH_SIZE ))
+done
+info "Done waiting." " It is now $(date)"

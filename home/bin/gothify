@@ -1,0 +1,56 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+# Convert some text to the equivalent Gothic text
+
+import os
+import re
+import sys
+
+ENCODING = 'utf-8'
+
+def _unichr(code):
+ s = "\\U%08x" % code
+ return s.decode('unicode-escape')
+
+
+def substitute(text):
+ for char in text:
+   code = ord(char)
+   if (code >= ord('A') and code <=ord('Z')):
+     yield _unichr(code + 120107)
+     continue
+   if (code >= ord('a') and code <=ord('z')):
+     yield _unichr(code + 120101)
+     continue
+   if (code >= ord('0') and code <=ord('9')):
+     yield _unichr(code + 120744)
+     continue
+   yield char
+
+
+def main(argv):
+ try:
+   if argv:
+     input_file = open(argv[0])
+   else:
+     input_file = sys.stdin
+   data = input_file.read()
+   input_text = data.decode(ENCODING)
+ except IndexError:
+   sys.stderr.write('Error please specify input file\n')
+   sys.exit(os.EX_USAGE)
+ except IOError:
+   sys.stderr.write('Could not read file %r\n' % argv[0])
+   sys.exit(os.EX_DATAERR)
+ converted_text = u''.join(substitute(input_text))
+ converted_data = converted_text.encode(ENCODING)
+ if len(argv) >= 2:
+   output_file = open(argv[1], 'w')
+ else:
+   output_file = sys.stdout
+ output_file.write(converted_data)
+
+
+if __name__ == "__main__":
+   main(sys.argv[1:])

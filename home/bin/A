@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# use of the 'script' commend found here:
+#  https://stackoverflow.com/questions/1401002/how-to-trick-an-application-into-thinking-its-stdout-is-a-terminal-not-a-pipe
+
+echo -e "\e[0;44mExecuting: \e[1;37m$*\e[0m\n"
+stdbuf -oL time script --return --quiet --flush --command "$(printf "%q " "$@")" |& ${HOME}/bin/clarify
+readonly rc=${PIPESTATUS[0]}
+date
+if (( rc == 0 )); then
+  echo -e "\e[0;32mDone: \e[1;37m$*\e[0m\n"
+else
+  echo -e "\e[0;93mFailed [${rc}]: \e[1;37m$*\e[0m\n"
+fi
+exit $rc

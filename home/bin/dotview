@@ -1,0 +1,9 @@
+#!/bin/bash
+
+tmpfile=/tmp/dotview_$$.ps
+cat | dot -Tps -o$tmpfile
+if [[ ! -f $tmpfile ]]; then
+   kdialog --sorry "Conversion produce no image"
+   exit 1
+fi
+(kpdf $tmpfile 2>/dev/null ; rm $tmpfile)

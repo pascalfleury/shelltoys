@@ -4,10 +4,12 @@
 
 # General
 $P = " *% *.backup .nfs* ";
+# VCS stuff
+$P .= " *.rej *.orig ";
 # Latex stuff
 $P .= " *.bbl *.dvi *.aux *.blg *.idx *.lof *.toc *.lot *.log ";
 # Programming stuff
-$P .= " *.o core *.pyc ";
+$P .= " *.o core ";
 # Simple backups
 $P .= " *.BAK *.bak *~ textedit.* .save* ";
 # Purify remains

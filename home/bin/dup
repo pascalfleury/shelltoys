@@ -1,0 +1,13 @@
+#!/bin/bash
+readonly MAX_AGE=10 # minutes
+readonly HERE="$(pwd)"
+readonly TMPFILE=${HOME}/.duprc
+
+find "${TMPFILE}" --mmin +10 && rm -f "${TMPFILE}"
+if [[ -e "${TMPFILE}" ]]; then
+  echo "cd $(cat ${TMPFILE})"
+  rm "${TMPFILE}"
+else
+  echo -n "${HERE}" > "${TMPFILE}"
+  echo "echo ${HERE}"
+fi

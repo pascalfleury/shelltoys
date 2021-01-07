@@ -1,0 +1,35 @@
+#! /usr/bin/ruby
+#
+# unoctify - a tool to decode octal representation in text.
+#
+# % echo '\101\102\103' | unoctify
+# ABC
+#
+# You can also use this filter for decoding GDB's octal text output.
+# You need to do "set charse ASCII" in GDB.
+#
+# % gdb | unoctify
+# % set charset ASCII
+#
+# Web Version: http://0xcc.net/jsescape/
+#
+
+STDIN.sync = true
+STDOUT.sync = true
+
+buf = ''
+while c = STDIN.read(1)
+  if buf.empty? and c == '\\'
+    buf << c
+  elsif (not buf.empty?) and /^[0-7]$/.match(c)
+    buf << c
+    if buf.length == 4
+      print buf[1, 3].to_i(8).chr
+      buf = ''
+    end
+  else
+    print buf
+    print c
+    buf = ''
+  end
+end

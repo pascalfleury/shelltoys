@@ -1,0 +1,18 @@
+#! /usr/bin/ruby
+# -*- coding: utf-8 -*-
+#
+# octify - a tool to encode non-ascii bytes into octal representation
+#
+# % echo 'あいう' | octify
+# \343\201\202\343\201\204\343\201\206\343\200\200
+#
+
+while line = gets
+  line.each_byte {|byte|
+    if byte < 128
+      print byte.chr
+    else
+      printf("\\%3o", byte)
+    end
+  }
+end

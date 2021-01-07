@@ -1,0 +1,53 @@
+#!/usr/bin/perl
+
+# This script watches a list of files, and will run the specified command
+# as soon as one of the watched fiels has changed.
+my $exec_flag=0;
+my $delay=2;
+my @cmd = ();
+my @files = ();
+
+# Get the command lines options
+while ( $_ = shift @ARGV ) {
+	if ( /^--exec/o ) { $exec_flag++ }
+	elsif ( /^--delay/o ) { $delay=shift @ARGV; }
+	elsif( /^-/ ) { warn "Unknown option '$_' !\n"; }
+	else {
+		if ( $exec_flag ) { push(@cmd,$_) }
+		else { push(@files,$_) }
+	}
+}
+
+warn "File scan delay: $delay\n";
+warn "Files watched  : @files\n";
+warn "Command to run : @cmd\n";
+
+# some sanity checks
+@files = grep { defined }
+			map { -r $_ ? $_ : warn("Cannot read file '$_' !\n"),undef }
+			@files;
+
+
+# Now loop, watching the files
+my $last_run = 0;
+
+while ( 1 ) {
+	# find out if we have a newer file
+	my ($latest) = sort { $a <=> $b } map { -M } @files;
+	#warn "latest=$latest last_run=$last_run"; #DBG
+
+	if ( $last_run!=0 && $latest >= $last_run ) {
+		sleep $delay;
+	} else {
+		# Inform the user
+		my @changed = grep { -M $_ < $last_run } @files;
+		my $pls = ( @changed == 1) ? "" : "s";
+		my $plv = ( @changed == 1) ? "s" : "ve";
+		print "Re-run because file${pls} @changed ha${plv} changed.\n";
+		if ( fork()==0 ) {
+			exec(@cmd);
+		}
+		wait;
+		$last_run = $latest;
+	}
+}
