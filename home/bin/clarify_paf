@@ -82,29 +82,15 @@ while ($_ = <STDIN>) {
   s|^([\d:\.]+: )?(E\d+.*: *\d+\])( .*)$|%red%$1$2%white%$3|go;
   s|^([\d:\.]+: )?(F\d+.*: *\d+\])( .*)$|%red%$1$2%white%$3|go;
 
-  # colorize the ontology files.
-  s#^([^:]*/)(\w+)(\.(directed|undirected):)([^\|]*)\|([^\|]*)\|([^\|]+)(.*)#%blue%$1%yellow%$2%blue%$3%green%$5%white%|%red%$6%white%|%magenta%$7%white%$8#go;
-  s#^([^:]*/)(\w+)(\.property:)([^\|]*)\|([^\|]+)(.*)#%blue%$1%white%$2%blue%$3%green%$4%white%|%magenta%$5%white%$6#go;
-
-  # emphasize equivalence relations.
-  s#%yellow%(equivalence)%#%black%%on_yellow%$1%#go;
-
   # mark the log separators I use when playing
   s|^(####.*)|%blue on_white%$1|go;
 
-  # blaze static analyzer
+  # bazel static analyzer
   s|(__Results .* of target)|$1%bright_green%|go;
   s/((Missing|Unnecessary|Possibly unnecessary) dependencies)/  %yellow%$1%reset%/go;
   s|Results unavailable:|%red%$1%reset%|go;
   s/(Indirect dependencies)/  $1/go;
   s|^(  //[^\s]*)|%bright_white%$1%reset%|go;
-
-  # RefCon scorer output colorifying
-  s/(\[(NAME|RELA|RELATED|TYPE)\] *)/%bright_yellow%$1%bright_white%/go;
-  s/(\b(NAME|RELA|RELATED|TYPE)\| *)/%bright_yellow%$1%bright_white%/go;
-  s/\bSCORE_(RECON_NEW)_SCORING\b/%yellow%$1%bright_white%/go;
-  s/\bSCORE_(RECON\b)/%green%$1%bright_white%/go;
-  s/\bSCORE_(CLUSTERS\b)/%bright_blue%$1%bright_white%/go;
 
   # Flags error messages
   # FATAL Flags parsing error: Unknown command line flag 'model_extractin_dir'. Did you mean: model_extraction_dir?
