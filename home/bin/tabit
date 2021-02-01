@@ -1,18 +1,38 @@
-#!/bin/sh
+#!/bin/bash
 
-if test -z "$KONSOLE_DCOP_SESSION" ; then
-    exit 0
+readonly RC=$1  # This is passed from the PS1 prompt.
+readonly CD="$(pwd)"
+
+NAME="$(basename "${CD}")"
+PROJECT=""
+PJTYPE=""
+
+[[ ${CD} =~ .*/Devel/([^/]*)/.*    ]] && PROJECT="${BASH_REMATCH[1]}"
+[[ ${CD} =~ .*/Projects/([^/]*)/.* ]] && PROJECT="${BASH_REMATCH[1]}"
+
+# Check git branch, if any
+gitbranch=$(git branch 2>/dev/null | grep '\*' | awk '{print $2}')
+if [[ -n "${gitbranch}" ]]; then
+    root="$(git rev-parse --show-toplevel)"
+    NAME="${root##*/}@${gitbranch}"
+    PJTYPE="[git]"
+    url="$(git config --get remote.origin.url)"
+    if [[ ${url} =~ https://github.com/([^/]*)/.*.git ]]; then
+        PJTYPE="[github] ${BASH_REMATCH[1]}"
+    fi
+
 fi
 
-export CD=`pwd`/
-NAME=`echo $CD | sed 's,.*/Devel/\([^/]*\)/.*,\1,'`
-if test "$NAME" = "$CD" ; then
-  NAME=`echo $CD | sed 's,.*/Projects/\([^/]*\)/.*,Project \1,' `
-fi
-if test "$NAME" = "$CD" ; then
-  NAME="Shell"
-fi
+PROMPT="${PROJECT}${PROJECT:+/}${NAME}"
+TABNAME="${PJTYPE}${PJTYPE:+/}${NAME}"
 
-if ! test -z "$NAME" ; then
-	dcop $KONSOLE_DCOP_SESSION renameSession "$NAME"
+# Print the prompt
+echo -n "${PROMPT}"
+
+# update the tab if it is running in Konsole
+if [[ -n "${KONSOLE_DBUS_SESSION}" ]]; then
+    dbus-send --type=method_call --session \
+              --dest=${KONSOLE_DBUS_SERVICE} \
+              ${KONSOLE_DBUS_SESSION} \
+              org.kde.konsole.Session.setTitle int32:1 string:"${TABNAME}"
 fi
