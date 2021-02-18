@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# If the file does not exist, well then leave it.
+[[ -e "${HOME}/.cwd" ]] || exit 0
+CD=$(cat "${HOME}/.cwd")
+[[ -d "${CD}" ]] && cd "${CD}"
