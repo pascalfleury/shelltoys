@@ -3,6 +3,35 @@
 # use of the 'script' commend found here:
 #  https://stackoverflow.com/questions/1401002/how-to-trick-an-application-into-thinking-its-stdout-is-a-terminal-not-a-pipe
 
+function nameTab() {
+  local tabname="$1"
+  if [[ -n "${KONSOLE_DBUS_SERVICE}" ]]; then
+    dbus-send --session \
+      --dest=${KONSOLE_DBUS_SERVICE} \
+      --type=method_call \
+      ${KONSOLE_DBUS_SESSION} \
+      org.kde.konsole.Session.setTitle int32:1 string:"${tabname}" >/dev/null 2>&1
+  fi
+} # nameTab()
+
+use_banner=0
+while [[ $1 =~ ^-.* ]]; do
+  if [[ "$1" == "--banner" || "$1" == "-b" ]]; then
+    use_banner=1
+    shift
+  elif [[ "$1" == "--name" || "$1" == "-n" ]]; then
+    tabname=$2
+    nameTab "${tabname}"
+    shift 2
+  fi
+done
+
+if (( use_banner )) && [[ -n "$(which figlet)" ]]; then
+  binary=$1
+  figlet -w $(tput cols) -c " -x-x-x-  ${binary##*/}  -x-x-x- "
+fi
+
+
 echo -e "\e[0;44mExecuting: \e[1;37m$*\e[0m\n"
 stdbuf -oL time script --return --quiet --flush --command "$(printf "%q " "$@")" |& ${HOME}/bin/clarify
 readonly rc=${PIPESTATUS[0]}
