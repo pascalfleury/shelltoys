@@ -1,6 +1,6 @@
 #!/bin/bash
 
-readonly RC=$1  # This is passed from the PS1 prompt.
+readonly RC=${1:-0}  # This is passed from the PS1 prompt.
 readonly CD="$(pwd)"
 
 NAME="$(basename "${CD}")"
@@ -36,3 +36,6 @@ if [[ -n "${KONSOLE_DBUS_SESSION}" ]]; then
               ${KONSOLE_DBUS_SESSION} \
               org.kde.konsole.Session.setTitle int32:1 string:"${TABNAME}"
 fi
+
+# make sure this script return the passed-in return code so the PS1 can use the commands's $
+exit ${RC}
