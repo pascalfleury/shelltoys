@@ -20,10 +20,10 @@ gitbranch=$(git branch 2>/dev/null | grep '\*' | awk '{print $2}')
 if [[ -n "${gitbranch}" ]]; then
     root="$(git rev-parse --show-toplevel)"
     LOCATION="@${gitbranch}"
-    [[ "${root}" == "${CD}" ]] && LOCATION="${root##*/}${LOCATION}"
+    [[ "${root}" != "${CD}" ]] && LOCATION="${root##*/}${LOCATION}"
     PJTYPE=" git "
     url="$(git config --get remote.origin.url)"
-    if [[ ${url} =~ https://github.com/([^/]*)/.*.git ]]; then
+    if [[ ${url} =~ https://github.com/([^/]*)/.*(.git)? ]]; then
         PJTYPE="[github] ${BASH_REMATCH[1]}"
     fi
 
