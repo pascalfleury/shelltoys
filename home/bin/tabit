@@ -50,7 +50,7 @@ fi
 HOSTNAME=""  # only for remote locations
 [[ -n "${SSH_TTY:-}" ]] && HOSTNAME="$(hostname)"
 
-PROMPT="${blue}${HOSTNAME}${HOSTNAME:+ }${purple}${PJTYPE}${reset}${PJTYPE:+ }${yellow}${LOCATION}${reset}"
+PROMPT="${purple}${HOSTNAME}${reset}${HOSTNAME:+ }${blue}${PJTYPE}${reset}${PJTYPE:+ }${yellow}${LOCATION}${reset}"
 TABNAME="${PJTYPE}${PJTYPE:+/}${LOCATION}"
 
 # Print the prompt
