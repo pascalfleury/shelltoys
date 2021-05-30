@@ -3,19 +3,25 @@
 readonly RC=${1:-0}  # This is passed from the PS1 prompt.
 readonly CD="$(pwd)"
 
-NAME="$(basename "${CD}")"
-PROJECT=""
+LOCATION="(none)"
 PJTYPE=""
 
-[[ ${CD} =~ .*/Devel/([^/]*)/.*    ]] && PROJECT="${BASH_REMATCH[1]}"
-[[ ${CD} =~ .*/Projects/([^/]*)/.* ]] && PROJECT="${BASH_REMATCH[1]}"
+# Some colors
+blue=$(echo -e "\033[38;5;33m")
+yellow=$(echo -e "\033[1;33m")
+purple=$(echo -e "\033[1;33;44m")
+reset=$(echo -e "\033[0m")
+
+[[ "${CD}" =~ .*/Projects/([^/]*)/?.* ]] && LOCATION="${BASH_REMATCH[1]}" && PJTYPE=" dir "
+[[ "${CD}" =~ .*/Projects/Coding/([^/]*)/.* ]] && LOCATION="${BASH_REMATCH[1]}"
 
 # Check git branch, if any
 gitbranch=$(git branch 2>/dev/null | grep '\*' | awk '{print $2}')
 if [[ -n "${gitbranch}" ]]; then
     root="$(git rev-parse --show-toplevel)"
-    NAME="${root##*/}@${gitbranch}"
-    PJTYPE="[git]"
+    LOCATION="@${gitbranch}"
+    [[ "${root}" == "${CD}" ]] && LOCATION="${root##*/}${LOCATION}"
+    PJTYPE=" git "
     url="$(git config --get remote.origin.url)"
     if [[ ${url} =~ https://github.com/([^/]*)/.*.git ]]; then
         PJTYPE="[github] ${BASH_REMATCH[1]}"
@@ -23,8 +29,29 @@ if [[ -n "${gitbranch}" ]]; then
 
 fi
 
-PROMPT="${PROJECT}${PROJECT:+/}${NAME}"
-TABNAME="${PJTYPE}${PJTYPE:+/}${NAME}"
+# Check if projectile project
+rootdir="${CD}"
+while [[ "${rootdir}" != "/" ]]; do
+    [[ -f "${rootdir}/.projectile" ]] && break
+    rootdir="$(dirname "${rootdir}")"
+done
+if [[ "${rootdir}" != "/" ]]; then
+    LOCATION=""
+    [[ "${rootdir}" != "${CD}" ]] && LOCATION="$(basename "${rootdir}")"
+    PJTYPE=" pjtile "
+fi
+
+# Check for temp locations
+if [[ "${CD}" =~ /tmp/?.* ]] || [[ "${CD}" =~ ${HOME}/TEMP/?.* ]]; then
+    PJTYPE=" tmp "
+    LOCATION=$(du -ksh "${CD}" 2>/dev/null | awk '{print $1}')
+fi
+
+HOSTNAME=""  # only for remote locations
+[[ -n "${SSH_TTY:-}" ]] && HOSTNAME="$(hostname)"
+
+PROMPT="${blue}${HOSTNAME}${HOSTNAME:+ }${purple}${PJTYPE}${reset}${PJTYPE:+ }${yellow}${LOCATION}${reset}"
+TABNAME="${PJTYPE}${PJTYPE:+/}${LOCATION}"
 
 # Print the prompt
 echo -n "${PROMPT}"
