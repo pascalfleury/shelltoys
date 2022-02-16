@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# Job Chain (jc) let's one append this to a job in a shell, and have others wait
+# for it to finish before going on.
+
+TAGSDIR="${TMPDIR:-/tmp}/jc_${USER}"
+[[ -d "${TAGSDIR}" ]] || mkdir -p "${TAGSDIR}"
+
+INOTIFYWAIT="$(which inotifywait)"
+if [[ ! -x "${INOTIFYWAIT}" ]]; then
+  echo >&2 "Could not find 'inotifywait' !"
+  exit 1
+fi
+
+# Function to mark some task with tag as done.
+function jc::done() {
+  local tag=$1
+  touch "${TAGSDIR}/${tag}"
+}
+
+# Function to wait on a particular tag and block until then.
+# @param tag The tag to wait for.
+function jc::wait() {
+  local tag=$1
+  local timeout=$2
+
+  local triggered_tag="<none>"
+  while [[ ${triggered_tag} != "${tag}" ]]; do
+    triggered_tag=$(${INOTIFYWAIT} ${timeout:+--timeout} ${timeout} --format %f -e create -e attrib "${TAGSDIR}")
+  done
+}
+
+function jc::cleanup() {
+  local tag=$1
+  tagfile="${TAGSDIR}/${tag}"
+  touch "$tagfile"
+  sleep 1
+  rm -f "${tagfile}"
+}
+
+# Process the arguments
+OP=$1
+shift
+
+TAG=$1
+shift
+
+case "${OP}" in
+  done)  jc::done "${TAG}" ;;
+  wait)  jc::wait "${TAG}" ;;
+  chain) jc::wait "${TAG}" && jc::cleanup "${TAG}" ;;
+  *)     echo >&2 "$0 <done|wait|chain> <tag>"; exit 1 ;;
+esac
