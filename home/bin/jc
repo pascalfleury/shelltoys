@@ -25,9 +25,10 @@ function jc::wait() {
   local timeout=$2
 
   local triggered_tag="<none>"
-  while [[ ${triggered_tag} != "${tag}" ]]; do
+  while [[ "${triggered_tag}" != "${tag}" ]]; do
     triggered_tag=$(${INOTIFYWAIT} ${timeout:+--timeout} ${timeout} --format %f -e create -e attrib "${TAGSDIR}")
   done
+  echo >&2 "Tag '${tag}' was triggered! done waiting!"
 }
 
 function jc::cleanup() {
@@ -36,6 +37,11 @@ function jc::cleanup() {
   touch "$tagfile"
   sleep 1
   rm -f "${tagfile}"
+}
+
+function jc::list() {
+  echo >&2 "Tag dir: ${TAGSDIR}"
+  ls -l -1 "${TAGSDIR}"
 }
 
 # Process the arguments
@@ -49,5 +55,6 @@ case "${OP}" in
   done)  jc::done "${TAG}" ;;
   wait)  jc::wait "${TAG}" ;;
   chain) jc::wait "${TAG}" && jc::cleanup "${TAG}" ;;
+  list)  jc::list ;;
   *)     echo >&2 "$0 <done|wait|chain> <tag>"; exit 1 ;;
 esac
