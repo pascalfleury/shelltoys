@@ -1,8 +1,8 @@
 #!/bin/bash
 set -o errexit
 
-PDFFILE=${1}
-IMG_PDFFILE=${2}
+PDFFILE="${1}"
+IMG_PDFFILE="${2}"
 RESOLUTION=${RESOLUTION:-600}  # in DPI
 
 function info() {
@@ -27,17 +27,17 @@ CONVERT=$(which convert)
 [[ -n "${GHOSTSCRIPT}" ]] || die "Could not find 'gs' !"
 
 # Prepare the space
-readonly TMPDIR=${PDFFILE%.*}_imgs
-mkdir -p ${TMPDIR}
+readonly TMPDIR="${PDFFILE%.*}_imgs"
+mkdir -p "${TMPDIR}"
 
 # Make the PDFFILE absolute path
 BASE_PDFFILE="$(basename "${PDFFILE}")"
-PDFFILE="$(cd $(dirname "${PDFFILE}") && echo $PWD)/${BASE_PDFFILE}"
+PDFFILE="$(cd "$(dirname "${PDFFILE}")" 2>/dev/null 1>&2 && pwd)/${BASE_PDFFILE}"
 if [[ -z "${IMG_PDFFILE}" ]]; then
     IMG_PDFFILE="$(dirname "${PDFFILE}")/${BASE_PDFFILE%.*}_img.pdf"
 fi
 
-pushd ${TMPDIR} >/dev/null 2>&1
+pushd "${TMPDIR}" >/dev/null 2>&1
 
 # Split it into pages
 info "Splitting into separate ${RESOLUTION}x${RESOLUTION} dpi pages..."
