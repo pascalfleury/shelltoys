@@ -32,7 +32,14 @@ if (( use_banner )) && [[ -n "$(which figlet)" ]]; then
 fi
 
 
-echo -e "\e[0;44mExecuting: \e[1;37m$*\e[0m\n"
+echo -e "\e[0;44mExecuting: \e[1;37m$*\e[0m"
+REAL_PATH="$(realpath "${PWD}")"
+if [[ "${REAL_PATH}" != "${PWD}" ]]; then
+   echo -e "\e[0;46mRun in \e[1;37m${REAL_PATH}\e[0m"
+   cd "${REAL_PATH}"
+fi
+echo ""  # newline
+
 stdbuf -oL time script --return --quiet --flush --command "$(printf "%q " "$@")" |& ${HOME}/bin/clarify
 readonly rc=${PIPESTATUS[0]}
 date
