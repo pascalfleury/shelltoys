@@ -31,8 +31,16 @@ if (( use_banner )) && [[ -n "$(which figlet)" ]]; then
   figlet -w $(tput cols) -c " -x-x-x-  ${binary##*/}  -x-x-x- "
 fi
 
+declare -a args
+for arg in "$@"; do
+  if [[ "${arg}" =~ \  ]]; then
+    args+=( "'${arg}'" )
+  else
+    args+=( "${arg}" )
+  fi
+done
 
-echo -e "\e[0;44mExecuting: \e[1;37m$*\e[0m"
+echo -e "\e[0;44mExecuting: \e[1;37m${args[*]}\e[0m"
 REAL_PATH="$(realpath "${PWD}")"
 if [[ "${REAL_PATH}" != "${PWD}" ]]; then
    echo -e "\e[0;46mRun in \e[1;37m${REAL_PATH}\e[0m"
