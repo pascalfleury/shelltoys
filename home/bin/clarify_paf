@@ -16,7 +16,7 @@ sub substitute {
 
 while ($_ = <STDIN>) {
   # skip some junk I never read anyway
-  next if / thread.cc:17[78]\d\]/o;
+  next if / thread.cc:17[01]\d\]/o;
   next if / thread.cc.*\/build\/cas\//o;
 
   # Shorten the line about Deprecated GCIDS
