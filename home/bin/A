@@ -48,7 +48,8 @@ if [[ "${REAL_PATH}" != "${PWD}" ]]; then
 fi
 echo ""  # newline
 
-stdbuf -oL time script --return --quiet --flush --command "$(printf "%q " "$@")" |& ${HOME}/bin/clarify
+# stdbuf -oL -eL time script --return --quiet --flush --command "$(printf "%q " "$@")" |& ${HOME}/bin/clarify
+stdbuf -oL -eL time "$@" |& ${HOME}/bin/clarify
 readonly rc=${PIPESTATUS[0]}
 date
 if (( rc == 0 )); then
