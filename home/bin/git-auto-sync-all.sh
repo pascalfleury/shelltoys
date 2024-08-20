@@ -44,10 +44,11 @@ function has_gcert() {
 GIT_AUTO_SYNC="$(find_exec git-auto-sync)"
 
 for repos in $(${GIT_AUTO_SYNC} daemon list); do
-    type="$(git remote get-url origin)"
-    LOG INFO "Syncing repository 「${type%%:*}」 ${repos} ..."
     (
         cd "${repos}"
+        type="$(git remote get-url origin)"
+        LOG INFO "Syncing repository 「${type%%:*}」 ${repos} ..."
+
         if ! is_tty && ! has_gcert; then
             gcert || LOG FATAL "Could not run gcert!"
         fi
