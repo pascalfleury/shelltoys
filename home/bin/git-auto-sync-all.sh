@@ -27,16 +27,16 @@ function find_exec() {
     echo ${exec}
 }
 
-function needs_gcert() {
+function has_gcert() {
     local remote="${1:-origin}"
     find_exec git >/dev/null
     case "$(git remote get-url ${remote})" in
         sso://*)
             find_exec gcertstatus >/dev/null
-            gcertstatus --quiet && return ${FAILURE}
-            return ${SUCCESS}
+            gcertstatus --quiet
+            return $?
             ;;
-        *) return ${FAILURE}
+        *) return ${SUCCESS}
            ;;
     esac
 }
@@ -47,7 +47,7 @@ for repos in $(${GIT_AUTO_SYNC} daemon list); do
     echo "Syncing repository ${repos} ..." >&2
     (
         cd "${repos}"
-        if is_tty && needs_gcert; then
+        if ! is_tty && ! has_gcert; then
             gcert || LOG FATAL "Could not run gcert!"
         fi
         gcert && ${GIT_AUTO_SYNC} sync
