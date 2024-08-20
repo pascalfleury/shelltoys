@@ -47,9 +47,6 @@ for repos in $(${GIT_AUTO_SYNC} daemon list); do
     echo "Syncing repository ${repos} ..." >&2
     (
         cd "${repos}"
-        is_tty && LOG INFO "in TTY" || LOG INFO "not a TTY"
-        has_gcert && LOG INFO "has vali gcert" || LOG WARN "has no gcert creds"
-        set -x
         if ! is_tty && ! has_gcert; then
             gcert || LOG FATAL "Could not run gcert!"
         fi
