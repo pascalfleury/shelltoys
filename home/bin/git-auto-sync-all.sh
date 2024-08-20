@@ -33,14 +33,14 @@ function ensure_gcert() {
         sso://*)
             find_exec gcertstatus >/dev/null
             gcertstatus --quiet && return ${SUCCESS}
-            is_tty && gcert || LOG FATAL "Could not run gcert!"
+            is_tty || LOG FATAL "Not an interactive mode!"
+            gcert || LOG FATAL "Could not renew certificate!"
             ;;
     esac
     return ${SUCCESS}
 }
 
 GIT_AUTO_SYNC="$(find_exec git-auto-sync)"
-
 for repos in $(${GIT_AUTO_SYNC} daemon list); do
     (
         cd "${repos}"
