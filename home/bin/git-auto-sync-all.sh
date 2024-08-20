@@ -44,7 +44,7 @@ function has_gcert() {
 GIT_AUTO_SYNC="$(find_exec git-auto-sync)"
 
 for repos in $(${GIT_AUTO_SYNC} daemon list); do
-    echo "Syncing repository ${repos} ..." >&2
+    LOG INFO "Syncing repository ${repos} ..."
     (
         cd "${repos}"
         if ! is_tty && ! has_gcert; then
