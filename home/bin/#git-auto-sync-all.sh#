@@ -1,6 +1,17 @@
 #!/bin/bash
 
+function LOG() {
+    local level="$1"
+    shift 1
+    case "${level}" in
+        WARN*)  echo "[]"
+    esac
+}
 
+function find_exec() {
+    local path="$1"
+    [[]]
+}
 
 GIT_AUTO_SYNC="$(which git-auto-sync)"
 if [[ -z "${GIT_AUTO_SYNC}" ]]; then
