@@ -28,6 +28,7 @@ function find_exec() {
 }
 
 function ensure_gcert() {
+    set -x
     local repos_url="$1"
     case "${repos_url}" in
         sso://*)
@@ -37,6 +38,7 @@ function ensure_gcert() {
             gcert || LOG FATAL "Could not renew certificate!"
             ;;
     esac
+    set +x
     return ${SUCCESS}
 }
 
