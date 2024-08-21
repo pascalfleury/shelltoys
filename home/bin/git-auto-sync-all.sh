@@ -33,7 +33,7 @@ function ensure_gcert() {
     case "${repos_url}" in
         sso://*)
             find_exec gcertstatus >/dev/null
-            gcertstatus --quiet && return ${SUCCESS}
+            gcertstatus --check_remaining=5h --quiet && return ${SUCCESS}
             is_tty || LOG FATAL "Not an interactive mode!"
             gcert || LOG FATAL "Could not renew certificate!"
             ;;
