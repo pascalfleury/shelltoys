@@ -3,30 +3,16 @@
 # use of the 'script' commend found here:
 #  https://stackoverflow.com/questions/1401002/how-to-trick-an-application-into-thinking-its-stdout-is-a-terminal-not-a-pipe
 
-function nameTab() {
-  local tabname="$1"
-  if [[ -n "${KONSOLE_DBUS_SERVICE}" ]]; then
-    dbus-send --session \
-      --dest=${KONSOLE_DBUS_SERVICE} \
-      --type=method_call \
-      ${KONSOLE_DBUS_SESSION} \
-      org.kde.konsole.Session.setTitle int32:1 string:"${tabname}" >/dev/null 2>&1
-  fi
-} # nameTab()
-
+# Parse flags
 use_banner=0
 while [[ $1 =~ ^-.* ]]; do
   if [[ "$1" == "--banner" || "$1" == "-b" ]]; then
-    use_banner=1
+    [[ -n "$(which figlet)" ]] && use_banner=1
     shift
-  elif [[ "$1" == "--name" || "$1" == "-n" ]]; then
-    tabname=$2
-    nameTab "${tabname}"
-    shift 2
   fi
 done
 
-if (( use_banner )) && [[ -n "$(which figlet)" ]]; then
+if (( use_banner )); then
   binary=$1
   figlet -w $(tput cols) -c " -x-x-x-  ${binary##*/}  -x-x-x- "
 fi
@@ -48,9 +34,10 @@ if [[ "${REAL_PATH}" != "${PWD}" ]]; then
 fi
 echo ""  # newline
 
-env | grep LD_
+# TODO: stdbuf seems to interfere with the resolution of glibc...
 # stdbuf -oL -eL time script --return --quiet --flush --command "$(printf "%q " "$@")" |& ${HOME}/bin/clarify
-stdbuf -oL -eL time "$@" |& ${HOME}/bin/clarify
+# stdbuf -o0 -e0 time "$@" |& ${HOME}/bin/clarify
+"$@" |& ${HOME}/bin/clarify
 readonly rc=${PIPESTATUS[0]}
 date
 if (( rc == 0 )); then
