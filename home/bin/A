@@ -48,6 +48,7 @@ if [[ "${REAL_PATH}" != "${PWD}" ]]; then
 fi
 echo ""  # newline
 
+env | grep LD_
 # stdbuf -oL -eL time script --return --quiet --flush --command "$(printf "%q " "$@")" |& ${HOME}/bin/clarify
 stdbuf -oL -eL time "$@" |& ${HOME}/bin/clarify
 readonly rc=${PIPESTATUS[0]}
