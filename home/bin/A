@@ -37,7 +37,7 @@ echo ""  # newline
 # TODO: stdbuf seems to interfere with the resolution of glibc...
 # stdbuf -oL -eL time script --return --quiet --flush --command "$(printf "%q " "$@")" |& ${HOME}/bin/clarify
 # stdbuf -o0 -e0 time "$@" |& ${HOME}/bin/clarify
-"$@" |& ${HOME}/bin/clarify
+time "$@" |& ${HOME}/bin/clarify
 readonly rc=${PIPESTATUS[0]}
 date
 if (( rc == 0 )); then
