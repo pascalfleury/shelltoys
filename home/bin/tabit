@@ -48,7 +48,7 @@ if [[ "${CD}" =~ /tmp/?.* ]] || [[ "${CD}" =~ ${HOME}/TEMP/?.* ]]; then
 fi
 
 HOSTNAME=""  # only for remote locations
-[[ -n "${SSH_TTY:-}" ]] && HOSTNAME="$(hostname)"
+[[ -n "${SSH_TTY:-}" || -n "${SSH_CONNECTION:-}" ]] && HOSTNAME="$(hostname)"
 
 PROMPT="${purple}${HOSTNAME}${reset}${HOSTNAME:+ }${blue}${PJTYPE}${reset}${PJTYPE:+ }${yellow}${LOCATION}${reset}"
 TABNAME="${PJTYPE}${PJTYPE:+/}${LOCATION}"
