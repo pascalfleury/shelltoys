@@ -1,0 +1,22 @@
+#!/bin/bash
+
+GCERT=/bin/gcert
+GIT_AUTO_SYNC=$(which git-auto-sync-all.sh)
+
+function LOG() {
+  local level="$1"
+  shift
+  local msg="$*"
+  echo "[ ${level} ] ${msg}" >&2
+  [[ "${level}" == "FATAL" ]] && exit 1
+}
+
+[[ -x "${GCERT}" ]] || LOG FATAL "No 'gcert' binary found!"
+
+${GCERT} "$@"
+
+if [[ -x "${GIT_AUTO_SYNC}" ]]; then
+  ${GIT_AUTO_SYNC}
+else
+  LOG WARNING "Could not find git-auto-sync (skipping)"
+fi
