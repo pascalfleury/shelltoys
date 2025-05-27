@@ -16,6 +16,7 @@ function LOG() {
 ${GCERT} "$@"
 
 if [[ -x "${GIT_AUTO_SYNC}" ]]; then
+  LOG INFO "Proactively sync'ing all the repositories."
   ${GIT_AUTO_SYNC}
 else
   LOG WARNING "Could not find git-auto-sync (skipping)"
