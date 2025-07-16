@@ -19,12 +19,22 @@ function is_tty() {
     return ${FAILURE}
 }
 
+# Finds the binary in the $PATH
 function find_exec() {
     local path="$1"
     [[ -z "${path}" ]] && LOG FATAL "find_exec needs a non-empty path"
     local exec="$(which "${path}")"
     [[ -z "${exec}" ]] && LOG FATAL "Could not find binary '${path}'"
     echo ${exec}
+}
+
+# Find the binary in $PATH that is actually part of the system.
+function find_system_exec() {
+  local path="$1"
+  [[ -z "${path}" ]] && LOG FATAL "find_exec needs a non-empty path"
+  local exec="$( which -a "${path}" | egrep -e '^/(bin|usr/bin|usr/local/bin)/' | head -n 1)"
+  [[ -z "${exec}" ]] && LOG FATAL "Could not find binary '${path}'"
+  echo "${exec}"
 }
 
 function ensure_gcert() {
@@ -34,7 +44,7 @@ function ensure_gcert() {
             find_exec gcertstatus >/dev/null
             gcertstatus --check_remaining=5h --quiet && return ${SUCCESS}
             is_tty || LOG FATAL "Not an interactive mode!"
-            gcert || LOG FATAL "Could not renew certificate!"
+            $(find_system_exec gcert) || LOG FATAL "Could not renew certificate!"
             ;;
     esac
     return ${SUCCESS}
