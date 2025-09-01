@@ -1,7 +1,10 @@
 #!/bin/bash
 
-GCERT=/bin/gcert
 GIT_AUTO_SYNC=$(which git-auto-sync-all.sh)
+
+# Find the real gcert, not this script.
+THIS_SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)/$(basename "${BASH_SOURCE[0]}")"
+GCERT=$(which -a gcert | egrep -v -e "^${BASH_SOURCE[0]}" | egrep -v -e "^${THIS_SCRIPT}" | head -n 1)
 
 function LOG() {
   local level="$1"
