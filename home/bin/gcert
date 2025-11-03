@@ -24,3 +24,7 @@ if [[ -x "${GIT_AUTO_SYNC}" ]]; then
 else
   LOG WARNING "Could not find git-auto-sync (skipping)"
 fi
+
+# Restart my polybar should it exist.
+POLYBAR="${HOME}/.config/i3/polybar.sh"
+[[ -x "${POLYBAR}" ]] && ${POLYBAR}
