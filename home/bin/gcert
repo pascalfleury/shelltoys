@@ -27,4 +27,4 @@ fi
 
 # Restart my polybar should it exist.
 POLYBAR="${HOME}/.config/i3/polybar.sh"
-[[ -x "${POLYBAR}" ]] && ${POLYBAR}
+[[ -x "${POLYBAR}" ]] && ${POLYBAR} && LOG INFO "Polybar restarted!"
