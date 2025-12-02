@@ -18,12 +18,16 @@ function LOG() {
 
 ${GCERT} "$@"
 
+# Sync my repositories
 if [[ -x "${GIT_AUTO_SYNC}" ]]; then
   LOG INFO "Proactively sync'ing all the repositories."
   ${GIT_AUTO_SYNC}
 else
   LOG WARNING "Could not find git-auto-sync (skipping)"
 fi
+
+# Update the dot files
+alias homeshick 2>/dev/null && homeshick link --skip >/dev/null 2>&1
 
 # Restart my polybar should it exist.
 POLYBAR="${HOME}/.config/i3/polybar.sh"
