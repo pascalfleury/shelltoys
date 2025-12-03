@@ -27,7 +27,7 @@ else
 fi
 
 # Update the dot files
-alias homeshick 2>/dev/null && homeshick link --skip >/dev/null 2>&1
+alias homeshick 2>/dev/null && homeshick link --skip >/dev/null 2>&1 && LOG INFO "updated homeshick links!"
 
 # Restart my polybar should it exist.
 POLYBAR="${HOME}/.config/i3/polybar.sh"
