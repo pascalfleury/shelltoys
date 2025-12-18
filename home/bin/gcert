@@ -30,9 +30,7 @@ fi
 alias homeshick 2>/dev/null && homeshick link --skip >/dev/null 2>&1 && LOG INFO "updated homeshick links!"
 
 # Restart my polybar should it exist.
-if (( KDE_FULL_SESSION )); then
-  LOG INFO "KDE running, no polybar restart."
-else
-POLYBAR="${HOME}/.config/i3/polybar.sh"
-[[ -x "${POLYBAR}" ]] && ${POLYBAR} && LOG INFO "Polybar restarted!"
+if [[ "${KDE_FULL_SESSION}" != "" ]]; then
+  POLYBAR="${HOME}/.config/i3/polybar.sh"
+  [[ -x "${POLYBAR}" ]] && ${POLYBAR} && LOG INFO "Polybar restarted!"
 fi
